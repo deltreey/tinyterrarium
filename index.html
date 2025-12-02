@@ -1,395 +1,483 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Tiny Terrarium Pet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <style>
-    :root {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    body {
-      margin: 0;
-      padding: 1rem;
-      background: #f2f5f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      text-align: center;
-    }
-    .subtitle {
-      font-size: 0.9rem;
-      color: #444;
-      text-align: center;
-      max-width: 420px;
-      line-height: 1.3;
-    }
-    #game-container {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    .controls {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      justify-content: center;
-      max-width: 420px;
-    }
-    button {
-      padding: 0.45rem 0.9rem;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-    .btn-water { background: #4caf50; color: #fff; }
-    .btn-light { background: #ffca28; color: #333; }
-    .btn-clean { background: #90caf9; color: #123; }
-    .btn-reset { background: #e0e6ea; color: #333; }
-    button:active { transform: translateY(1px); }
+    <meta charset="UTF-8" />
+    <title>Tiny Terrarium Pet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        :root {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
 
-    .footer {
-      font-size: 0.75rem;
-      color: #777;
-      text-align: center;
-      max-width: 420px;
-    }
-  </style>
+        body {
+            margin: 0;
+            padding: 1rem;
+            background: #f2f5f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #444;
+            text-align: center;
+            max-width: 420px;
+            line-height: 1.3;
+        }
+
+        #game-container {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 420px;
+        }
+
+        button {
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-water {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .btn-light {
+            background: #ffca28;
+            color: #333;
+        }
+
+        .btn-clean {
+            background: #90caf9;
+            color: #123;
+        }
+
+        .btn-reset {
+            background: #e0e6ea;
+            color: #333;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .difficulty {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .difficulty-title {
+            font-weight: 500;
+        }
+
+        #difficulty-slider {
+            flex: 1;
+        }
+
+        .difficulty-label {
+            min-width: 3.5rem;
+            text-align: right;
+            color: #444;
+        }
+
+        .footer {
+            font-size: 0.75rem;
+            color: #777;
+            text-align: center;
+            max-width: 420px;
+        }
+    </style>
 </head>
+
 <body>
-  <h1>Tiny Terrarium Pet</h1>
-  <div class="subtitle">
-    Merry Christmas! 🎄 Keep your tiny cactus watered, sunny, and clean.
-    If you ignore it, it will get grumpy… or worse.
-  </div>
+    <h1>Tiny Terrarium Pet</h1>
+    <div class="subtitle">
+        Merry Christmas! 🎄 Keep your tiny cactus watered, sunny, and clean.
+        If you ignore it, it will get grumpy… or worse.
+    </div>
 
-  <div id="game-container"></div>
+    <div id="game-container"></div>
 
-  <div class="controls">
-    <button class="btn-water" onclick="giveWater()">Water +20</button>
-    <button class="btn-light" onclick="giveLight()">Sunshine +20</button>
-    <button class="btn-clean" onclick="cleanJar()">Clean jar +20</button>
-    <button class="btn-reset" onclick="resetPet()">New cactus</button>
-  </div>
+    <div class="difficulty">
+        <span class="difficulty-title">Difficulty:</span>
+        <input type="range" id="difficulty-slider" min="0" max="2" step="1" value="1" />
+        <span id="difficulty-label" class="difficulty-label">Normal</span>
+    </div>
 
-  <div class="footer">
-    Your cactus lives in this browser only. Close the tab if you want to test what
-    happens when you abandon it for a while.
-  </div>
 
-  <script>
-    const STORAGE_KEY = "tiny_terrarium_pet_v1";
+    <div class="controls">
+        <button class="btn-water" onclick="giveWater()">Water +20</button>
+        <button class="btn-light" onclick="giveLight()">Sunshine +20</button>
+        <button class="btn-clean" onclick="cleanJar()">Clean jar +20</button>
+        <button class="btn-reset" onclick="resetPet()">New cactus</button>
+    </div>
 
-    let pet;
-    let lastUpdateMs = 0;
+    <div class="footer">
+        Your cactus lives in this browser only. Close the tab if you want to test what
+        happens when you abandon it for a while.
+    </div>
 
-    function newPet() {
-      const now = Date.now();
-      return {
-        name: "Tiny Terrarium",
-        moisture: 60,
-        light: 60,
-        clean: 80,
-        health: 80,
-        dead: false,
-        createdAt: now,
-        timeOfDeath: null,
-        ageSeconds: 0,
-        lastRealTime: now,
-        _saveAccumulator: 0 // internal, not part of the “fantasy”
-      };
-    }
+    <script>
+        const STORAGE_KEY = "tiny_terrarium_pet_v1";
 
-    function loadPet() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
-        const saved = JSON.parse(raw);
-        // Merge with defaults in case you add fields later
-        let p = Object.assign(newPet(), saved);
-        const now = Date.now();
-        const last = saved.lastRealTime || saved.createdAt || now;
-        const elapsedMinutes = (now - last) / 60000;
+        let pet;
+        let lastUpdateMs = 0;
+        let jarImg;
+        let cactusImg;
+        let happyCactusImg;
+        let okCactusImg;
+        let sadCactusImg;
+        let deadCactusImg;
 
-        if (elapsedMinutes > 0) {
-          applyOfflineDecay(p, elapsedMinutes);
-        }
-        p._saveAccumulator = 0;
-        return p;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function savePet() {
-      try {
-        const data = Object.assign({}, pet, { lastRealTime: Date.now() });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (e) {
-        // ignore quota or private mode errors
-      }
-    }
-
-    function applyOfflineDecay(p, minutes) {
-      const seconds = minutes * 60;
-      const moistureDecayPerSec = 0.3;
-      const lightDecayPerSec = 0.2;
-      const cleanDecayPerSec = 0.05;
-
-      p.moisture -= moistureDecayPerSec * seconds;
-      p.light -= lightDecayPerSec * seconds;
-      p.clean -= cleanDecayPerSec * seconds;
-
-      clampStats(p);
-
-      // crude health hit if you ghosted it
-      if (minutes > 30) {
-        p.health -= (minutes - 30) * 0.5;
-      }
-      p.health = constrain(p.health, 0, 100);
-      if (p.health <= 0) {
-        p.dead = true;
-        p.timeOfDeath = Date.now();
-      }
-    }
-
-    function clampStats(p) {
-      p.moisture = constrain(p.moisture, 0, 100);
-      p.light = constrain(p.light, 0, 100);
-      p.clean = constrain(p.clean, 0, 100);
-    }
-
-    function setup() {
-      const canvas = createCanvas(360, 480);
-      canvas.parent("game-container");
-
-      pet = loadPet() || newPet();
-      lastUpdateMs = millis();
-
-      textFont("system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
-    }
-
-    function draw() {
-      const nowMs = millis();
-      let dt = (nowMs - lastUpdateMs) / 1000.0; // seconds
-      // clamp DT so tab-jumps don’t freak it out
-      if (dt > 0.5) dt = 0.5;
-      updatePet(dt);
-      lastUpdateMs = nowMs;
-
-      renderPet();
-    }
-
-    function updatePet(dt) {
-      if (!pet) return;
-
-      const moistureDecayPerSec = 0.3;
-      const lightDecayPerSec = 0.2;
-      const cleanDecayPerSec = 0.05;
-
-      if (!pet.dead) {
-        pet.moisture -= moistureDecayPerSec * dt;
-        pet.light -= lightDecayPerSec * dt;
-        pet.clean -= cleanDecayPerSec * dt;
-        clampStats(pet);
-
-        const inGoodMoisture = pet.moisture >= 40 && pet.moisture <= 70;
-        const inGoodLight = pet.light >= 40 && pet.light <= 70;
-        const isCleanEnough = pet.clean >= 40;
-
-        if (inGoodMoisture && inGoodLight && isCleanEnough) {
-          pet.health += 2 * dt;
-        } else {
-          pet.health -= 3 * dt;
+        function preload() {
+            // load sprite images
+            jarImg = loadImage("jar.png");
+            happyCactusImg = loadImage("happy_cactus.png?v=2");
+            okCactusImg = loadImage("ok_cactus.png");
+            sadCactusImg = loadImage("sad_cactus.png");
+            deadCactusImg = loadImage("dead_cactus.png");
+            cactusImg = happyCactusImg;
         }
 
-        pet.health = constrain(pet.health, 0, 100);
+        const difficultyLevels = [
+            { label: "Chill",   factor: 0.05 }, // ~2–3 days before it really dies
+            { label: "Normal",  factor: 1.0  }, // your +0.2 / −0.3 baseline
+            { label: "Hard",    factor: 10.0 }  // original +2 / −3 brutality
+        ];
 
-        if (pet.health <= 0 && !pet.dead) {
-          pet.dead = true;
-          pet.timeOfDeath = Date.now();
+        function getDifficultyFactor(p) {
+            const idx =
+                p && typeof p.difficultyIndex === "number"
+                ? p.difficultyIndex
+                : 1;
+            return difficultyLevels[idx].factor;
         }
 
-        pet.ageSeconds += dt;
-      }
 
-      pet._saveAccumulator += dt;
-      if (pet._saveAccumulator >= 10) {
-        savePet();
-        pet._saveAccumulator = 0;
-      }
-    }
+        function newPet() {
+            const now = Date.now();
+            return {
+                name: "Tiny Terrarium",
+                moisture: 60,
+                light: 60,
+                clean: 80,
+                health: 80,
+                dead: false,
+                createdAt: now,
+                timeOfDeath: null,
+                ageSeconds: 0,
+                lastRealTime: now,
+                difficultyIndex: 1, // 0 = easy, 1 = normal, 2 = hard
+                _saveAccumulator: 0 // internal, not part of the “fantasy”
+            };
+        }
 
-    function renderPet() {
-      background(240, 245, 250);
+        function loadPet() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return null;
+                const saved = JSON.parse(raw);
+                // Merge with defaults in case you add fields later
+                let p = Object.assign(newPet(), saved);
+                if (typeof p.difficultyIndex !== "number") {
+                    p.difficultyIndex = 1;
+                }
+                const now = Date.now();
+                const last = saved.lastRealTime || saved.createdAt || now;
+                const elapsedMinutes = (now - last) / 60000;
 
-      // header text in-canvas
-      noStroke();
-      fill(30);
-      textSize(18);
-      textAlign(LEFT, TOP);
-      text(pet.dead ? "Your cactus has passed on 💀" : "Tiny Terrarium Pet", 16, 16);
+                if (elapsedMinutes > 0) {
+                    applyOfflineDecay(p, elapsedMinutes);
+                }
+                p._saveAccumulator = 0;
+                return p;
+            } catch (e) {
+                return null;
+            }
+        }
 
-      textSize(11);
-      fill(80);
-      let msg;
-      if (pet.dead) {
-        msg = "You can start a new one, or leave this shrine of neglect.";
-      } else {
-        msg = "Keep Water, Light, and Clean in the green for a happy cactus.";
-      }
-      text(msg, 16, 40, width - 32, 40);
+        function savePet() {
+            try {
+                const data = Object.assign({}, pet, { lastRealTime: Date.now() });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                // ignore quota or private mode errors
+            }
+        }
 
-      // jar
-      const cx = width / 2;
-      const topY = 110;
-      const bottomY = 360;
+        function applyOfflineDecay(p, minutes) {
+            const seconds = minutes * 60;
+            const moistureDecayPerSec = 0.3;
+            const lightDecayPerSec = 0.2;
+            const cleanDecayPerSec = 0.05;
 
-      stroke(180);
-      strokeWeight(3);
-      noFill();
-      rectMode(CENTER);
-      rect(cx, (topY + bottomY) / 2, 220, bottomY - topY, 30);
+            p.moisture -= moistureDecayPerSec * seconds;
+            p.light -= lightDecayPerSec * seconds;
+            p.clean -= cleanDecayPerSec * seconds;
 
-      // dirt
-      noStroke();
-      fill(160, 120, 80);
-      rectMode(CORNERS);
-      rect(cx - 100, bottomY - 40, cx + 100, bottomY);
+            clampStats(p);
 
-      // cactus body (size depends on health)
-      const healthFactor = pet.health / 100;
-      const baseHeight = 120;
-      const extraHeight = 40 * healthFactor;
-      const bodyHeight = baseHeight + extraHeight;
-      const bodyBottom = bottomY - 40;
-      const bodyTop = bodyBottom - bodyHeight;
+            // crude health hit if you ghosted it
+            const diffFactor = getDifficultyFactor(p);
+            if (minutes > 30) {
+                p.health -= (minutes - 30) * 0.5 * diffFactor;
+            }
+            p.health = constrain(p.health, 0, 100);
+            if (p.health <= 0) {
+                p.dead = true;
+                p.timeOfDeath = Date.now();
+            }
+        }
 
-      if (!pet.dead) {
-        fill(60, 170, 90);
-      } else {
-        fill(120, 120, 120);
-      }
-      rectMode(CORNERS);
-      rect(cx - 35, bodyTop, cx + 35, bodyBottom, 20);
+        function clampStats(p) {
+            p.moisture = constrain(p.moisture, 0, 100);
+            p.light = constrain(p.light, 0, 100);
+            p.clean = constrain(p.clean, 0, 100);
+        }
 
-      // arms
-      rect(cx - 60, bodyTop + 50, cx - 35, bodyBottom - 60, 20);
-      rect(cx + 35, bodyTop + 50, cx + 60, bodyBottom - 60, 20);
+        function setup() {
+            const canvas = createCanvas(360, 480);
+            canvas.parent("game-container");
 
-      // face
-      const faceY = bodyTop + 45;
-      const eyeOffsetX = 15;
-      const eyeSize = 8;
-      fill(0);
-      noStroke();
-      ellipse(cx - eyeOffsetX, faceY, eyeSize, eyeSize);
-      ellipse(cx + eyeOffsetX, faceY, eyeSize, eyeSize);
+            pet = loadPet() || newPet();
+            lastUpdateMs = millis();
 
-      stroke(0);
-      strokeWeight(2);
-      noFill();
-      if (pet.dead) {
-        // X eyes
-        line(cx - eyeOffsetX - 4, faceY - 4, cx - eyeOffsetX + 4, faceY + 4);
-        line(cx - eyeOffsetX - 4, faceY + 4, cx - eyeOffsetX + 4, faceY - 4);
-        line(cx + eyeOffsetX - 4, faceY - 4, cx + eyeOffsetX + 4, faceY + 4);
-        line(cx + eyeOffsetX - 4, faceY + 4, cx + eyeOffsetX + 4, faceY - 4);
-        // frown
-        arc(cx, faceY + 18, 26, 18, PI, 0);
-      } else if (pet.health > 60) {
-        // smile
-        arc(cx, faceY + 10, 26, 18, 0, PI);
-      } else if (pet.health > 30) {
-        // neutral
-        line(cx - 12, faceY + 10, cx + 12, faceY + 10);
-      } else {
-        // frown
-        arc(cx, faceY + 16, 26, 18, PI, 0);
-      }
+            textFont("system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
+            const slider = document.getElementById("difficulty-slider");
+            const label  = document.getElementById("difficulty-label");
 
-      // stat bars
-      let barX = 16;
-      let barY = 380;
-      drawBar(barX, barY, "Water", pet.moisture);
-      barY += 24;
-      drawBar(barX, barY, "Light", pet.light);
-      barY += 24;
-      drawBar(barX, barY, "Clean", pet.clean);
-      barY += 24;
-      drawBar(barX, barY, "Health", pet.health);
+            // initialize from saved pet
+            slider.value = pet.difficultyIndex;
+            label.textContent = difficultyLevels[pet.difficultyIndex].label;
 
-      // age / status
-      const ageDays = floor(pet.ageSeconds / 86400);
-      let ageLabel = pet.dead ? "RIP" : `Age: ${ageDays} day${ageDays === 1 ? "" : "s"}`;
-      noStroke();
-      fill(90);
-      textAlign(RIGHT, BOTTOM);
-      textSize(11);
-      text(ageLabel, width - 10, height - 10);
-    }
+            slider.addEventListener("input", () => {
+                pet.difficultyIndex = parseInt(slider.value, 10);
+                label.textContent = difficultyLevels[pet.difficultyIndex].label;
+                savePet();
+            });
+        }
 
-    function drawBar(x, y, label, value) {
-      const w = width - 32;
-      const h = 10;
-      noStroke();
-      textAlign(LEFT, CENTER);
-      textSize(11);
-      fill(60);
-      text(label, x, y - 7);
+        function draw() {
+            const nowMs = millis();
+            let dt = (nowMs - lastUpdateMs) / 1000.0; // seconds
+            // clamp DT so tab-jumps don’t freak it out
+            if (dt > 0.5) dt = 0.5;
+            updatePet(dt);
+            lastUpdateMs = nowMs;
 
-      // background
-      fill(220);
-      rectMode(CORNER);
-      rect(x, y, w, h, 999);
+            renderPet();
+        }
 
-      // color by “goodness”
-      let barColor;
-      if (value >= 40 && value <= 70) {
-        barColor = color(76, 175, 80); // green
-      } else if (value < 20 || value > 90) {
-        barColor = color(213, 0, 0); // red
-      } else {
-        barColor = color(255, 193, 7); // yellow
-      }
+        function updatePet(dt) {
+            if (!pet) return;
 
-      fill(barColor);
-      const clamped = constrain(value, 0, 100);
-      rect(x, y, (w * clamped) / 100, h, 999);
-    }
+            const moistureDecayPerSec = 0.3;
+            const lightDecayPerSec = 0.2;
+            const cleanDecayPerSec = 0.05;
 
-    // Button actions – this is where the "job" lives
-    function giveWater() {
-      if (!pet || pet.dead) return;
-      pet.moisture = constrain(pet.moisture + 20, 0, 100);
-      pet.health = constrain(pet.health + 2, 0, 100);
-      savePet();
-    }
+            if (!pet.dead) {
+                pet.moisture -= moistureDecayPerSec * dt;
+                pet.light -= lightDecayPerSec * dt;
+                pet.clean -= cleanDecayPerSec * dt;
+                clampStats(pet);
 
-    function giveLight() {
-      if (!pet || pet.dead) return;
-      pet.light = constrain(pet.light + 20, 0, 100);
-      pet.health = constrain(pet.health + 1, 0, 100);
-      savePet();
-    }
+                const inGoodMoisture = pet.moisture >= 40 && pet.moisture <= 70;
+                const inGoodLight = pet.light >= 40 && pet.light <= 70;
+                const isCleanEnough = pet.clean >= 40;
 
-    function cleanJar() {
-      if (!pet || pet.dead) return;
-      pet.clean = constrain(pet.clean + 20, 0, 100);
-      savePet();
-    }
+                const diffFactor = getDifficultyFactor(pet);
 
-    function resetPet() {
-      pet = newPet();
-      savePet();
-    }
-  </script>
+                if (inGoodMoisture && inGoodLight && isCleanEnough) {
+                    pet.health += 0.2 * diffFactor * dt;
+                } else {
+                    pet.health -= 0.3 * diffFactor * dt;
+                }
+
+                pet.health = constrain(pet.health, 0, 100);
+
+                if (pet.health <= 0 && !pet.dead) {
+                    pet.dead = true;
+                    pet.timeOfDeath = Date.now();
+                }
+
+                pet.ageSeconds += dt;
+            }
+
+            pet._saveAccumulator += dt;
+            if (pet._saveAccumulator >= 10) {
+                savePet();
+                pet._saveAccumulator = 0;
+            }
+        }
+
+        function renderPet() {
+            background(240, 245, 250);
+
+            // --- HEADER TEXT ---
+            noStroke();
+            fill(30);
+            textSize(18);
+            textAlign(LEFT, TOP);
+            text(pet.dead ? "Your cactus has passed on 💀" : "Tiny Terrarium Pet", 16, 16);
+
+            textSize(11);
+            fill(80);
+            let msg;
+            if (pet.dead) {
+                msg = "You can start a new one, or leave this shrine of neglect.";
+            } else {
+                msg = "Keep Water, Light, and Clean in the green for a happy cactus.";
+            }
+            text(msg, 16, 40, width - 32, 40);
+
+            // --- SPRITES: JAR + CACTUS ---
+            const cx = width / 2;
+
+            // jar placement
+            const jarW = 260;
+            const jarH = 360;
+            const jarX = (width - jarW) / 2;
+            const jarY = 80;
+            image(jarImg, jarX, jarY, jarW, jarH);
+
+            // cactus placement & scaling by health
+            const healthFactor = pet.health / 100; // 0–1
+            const minScale = 0.6;
+            const maxScale = 1.2;
+            const scale = minScale + (maxScale - minScale) * healthFactor;
+
+            const baseCactusW = 160;
+            const baseCactusH = 180;
+            const cactusW = baseCactusW * scale;
+            const cactusH = baseCactusH * scale;
+
+            // approximate "dirt top" inside jar
+            const dirtTopY = jarY + jarH - 85;
+
+            const cactusX = cx - cactusW / 2;
+            const cactusY = dirtTopY - cactusH + 5; // sinks into dirt a bit
+
+            if (healthFactor <= 0) {
+                cactusImg = deadCactusImg;
+            }
+            else if (healthFactor <= 0.4) {
+                cactusImg = sadCactusImg;
+            }
+            else if (healthFactor <= 0.8) {
+                cactusImg = okCactusImg;
+            }
+            else {
+                cactusImg = happyCactusImg;
+            }
+            image(cactusImg, cactusX, cactusY, cactusW, cactusH);
+
+            // --- STAT BARS (ON TOP OF EVERYTHING) ---
+            let barX = 16;
+            let barY = 330; // << move this up if your canvas is shorter
+
+            drawBar(barX, barY, "Water", pet.moisture);
+            barY += 24;
+            drawBar(barX, barY, "Light", pet.light);
+            barY += 24;
+            drawBar(barX, barY, "Clean", pet.clean, true);
+            barY += 24;
+            drawBar(barX, barY, "Health", pet.health, true);
+
+            // --- AGE / STATUS (ALSO ON TOP) ---
+            const ageDays = floor(pet.ageSeconds / 86400);
+            let ageLabel = pet.dead ? "RIP" : `Age: ${ageDays} day${ageDays === 1 ? "" : "s"}`;
+            noStroke();
+            fill(90);
+            textAlign(RIGHT, BOTTOM);
+            textSize(11);
+            text(ageLabel, width - 10, height - 10);
+        }
+
+        function drawBar(x, y, label, value, linear = false) {
+            const w = width - 32;
+            const h = 10;
+            noStroke();
+            textAlign(LEFT, CENTER);
+            textSize(11);
+            fill(60);
+            text(label, x, y - 7);
+
+            // background
+            fill(220);
+            rectMode(CORNER);
+            rect(x, y, w, h, 999);
+
+            // color by “goodness”
+            let barColor;
+            if (value >= 40 && value <= 70) {
+                barColor = color(76, 175, 80); // green
+                if (linear) {
+                    barColor = color(255, 193, 7); // yellow
+                }
+            } else if (value < 20 || value > 90) {
+                barColor = color(213, 0, 0); // red
+                if (linear && value > 90) {
+                    barColor = color(76, 175, 80); // green
+                }
+            } else {
+                barColor = color(255, 193, 7); // yellow
+            }
+
+            fill(barColor);
+            const clamped = constrain(value, 0, 100);
+            rect(x, y, (w * clamped) / 100, h, 999);
+        }
+
+        // Button actions – this is where the "job" lives
+        function giveWater() {
+            if (!pet || pet.dead) return;
+            pet.moisture = constrain(pet.moisture + 20, 0, 100);
+            // pet.health = constrain(pet.health + 2, 0, 100);
+            savePet();
+        }
+
+        function giveLight() {
+            if (!pet || pet.dead) return;
+            pet.light = constrain(pet.light + 20, 0, 100);
+            // pet.health = constrain(pet.health + 1, 0, 100);
+            savePet();
+        }
+
+        function cleanJar() {
+            if (!pet || pet.dead) return;
+            pet.clean = constrain(pet.clean + 20, 0, 100);
+            savePet();
+        }
+
+        function resetPet() {
+            pet = newPet();
+            savePet();
+        }
+    </script>
 </body>
+
 </html>
