@@ -164,17 +164,19 @@
         }
 
         const difficultyLevels = [
-            { label: "Chill",   factor: 0.05 }, // ~2–3 days before it really dies
-            { label: "Normal",  factor: 1.0  }, // your +0.2 / −0.3 baseline
-            { label: "Hard",    factor: 10.0 }  // original +2 / −3 brutality
+                { label: "Chill",  decayFactor: 0.045, healthFactor: 0.8 },
+                // Normal: baseline
+                { label: "Normal", decayFactor: 0.11, healthFactor: 1.0 },
+                // Hard: punishing decay, slightly stronger swings
+                { label: "Hard",   decayFactor: 0.5, healthFactor: 1.3 }
         ];
 
-        function getDifficultyFactor(p) {
+        function getDifficulty(p) {
             const idx =
                 p && typeof p.difficultyIndex === "number"
                 ? p.difficultyIndex
                 : 1;
-            return difficultyLevels[idx].factor;
+            return difficultyLevels[idx];
         }
 
 
@@ -231,21 +233,23 @@
 
         function applyOfflineDecay(p, minutes) {
             const seconds = minutes * 60;
-            const moistureDecayPerSec = 0.3;
-            const lightDecayPerSec = 0.2;
-            const cleanDecayPerSec = 0.05;
+            const d = getDifficulty(p);
+
+            const moistureDecayPerSec = 0.3 * d.decayFactor;
+            const lightDecayPerSec    = 0.2 * d.decayFactor;
+            const cleanDecayPerSec    = 0.05 * d.decayFactor;
 
             p.moisture -= moistureDecayPerSec * seconds;
-            p.light -= lightDecayPerSec * seconds;
-            p.clean -= cleanDecayPerSec * seconds;
+            p.light    -= lightDecayPerSec    * seconds;
+            p.clean    -= cleanDecayPerSec    * seconds;
 
             clampStats(p);
 
-            // crude health hit if you ghosted it
-            const diffFactor = getDifficultyFactor(p);
+            // health punishment for total abandonment
             if (minutes > 30) {
-                p.health -= (minutes - 30) * 0.5 * diffFactor;
+                p.health -= (minutes - 30) * 0.5 * d.decayFactor;
             }
+
             p.health = constrain(p.health, 0, 100);
             if (p.health <= 0) {
                 p.dead = true;
@@ -295,26 +299,25 @@
         function updatePet(dt) {
             if (!pet) return;
 
+            const difficulty = getDifficulty(pet);
             const moistureDecayPerSec = 0.3;
             const lightDecayPerSec = 0.2;
             const cleanDecayPerSec = 0.05;
 
             if (!pet.dead) {
-                pet.moisture -= moistureDecayPerSec * dt;
-                pet.light -= lightDecayPerSec * dt;
-                pet.clean -= cleanDecayPerSec * dt;
+                pet.moisture -= 0.3 * difficulty.decayFactor * dt;
+                pet.light    -= 0.2 * difficulty.decayFactor * dt;
+                pet.clean    -= 0.05 * difficulty.decayFactor * dt;
                 clampStats(pet);
 
                 const inGoodMoisture = pet.moisture >= 40 && pet.moisture <= 70;
                 const inGoodLight = pet.light >= 40 && pet.light <= 70;
                 const isCleanEnough = pet.clean >= 40;
 
-                const diffFactor = getDifficultyFactor(pet);
-
                 if (inGoodMoisture && inGoodLight && isCleanEnough) {
-                    pet.health += 0.2 * diffFactor * dt;
+                    pet.health += 0.2 * difficulty.healthFactor * dt;
                 } else {
-                    pet.health -= 0.3 * diffFactor * dt;
+                    pet.health -= 0.3 * difficulty.healthFactor * dt;
                 }
 
                 pet.health = constrain(pet.health, 0, 100);
