@@ -192,6 +192,7 @@
                 createdAt: now,
                 timeOfDeath: null,
                 ageSeconds: 0,
+                born: Date.now(),
                 lastRealTime: now,
                 difficultyIndex: 1, // 0 = easy, 1 = normal, 2 = hard
                 _saveAccumulator: 0 // internal, not part of the “fantasy”
@@ -326,8 +327,10 @@
                     pet.dead = true;
                     pet.timeOfDeath = Date.now();
                 }
-
-                pet.ageSeconds += dt;
+                
+                if (!pet.dead) {
+                    pet.ageSeconds = (Date.now() - pet.born) / 1000; // milliseconds to seconds
+                }
             }
 
             pet._saveAccumulator += dt;
@@ -477,7 +480,19 @@
         }
 
         function resetPet() {
+            const oldDifficulty =
+                pet && typeof pet.difficultyIndex === "number"
+                    ? pet.difficultyIndex
+                    : 1;
+
             pet = newPet();
+            pet.difficultyIndex = oldDifficulty;
+
+            const slider = document.getElementById("difficulty-slider");
+            const label  = document.getElementById("difficulty-label");
+            slider.value = pet.difficultyIndex;
+            label.textContent = difficultyLevels[pet.difficultyIndex].label;
+
             savePet();
         }
     </script>
