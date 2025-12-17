@@ -5,10 +5,15 @@
     <meta charset="UTF-8" />
     <title>Tiny Terrarium Pet</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <style>
         :root {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        canvas {
+            touch-action: none;
         }
 
         body {
@@ -77,6 +82,11 @@
             color: #333;
         }
 
+        .btn-decor {
+            background: #d7c7ff;
+            color: #2a1a4a;
+        }
+
         button:active {
             transform: translateY(1px);
         }
@@ -102,6 +112,79 @@
             min-width: 3.5rem;
             text-align: right;
             color: #444;
+        }
+
+        .drawer-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .drawer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: -320px;
+            background: #fff;
+            border-top-left-radius: 18px;
+            border-top-right-radius: 18px;
+            box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+            padding: 0.75rem;
+            transition: bottom 0.18s ease;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .drawer.open {
+            bottom: 0;
+        }
+
+        .drawer-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .drawer-title {
+            font-weight: 600;
+        }
+
+        .drawer-close {
+            border: none;
+            background: #e0e6ea;
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            cursor: pointer;
+        }
+
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .sticker-btn {
+            border: none;
+            background: #f2f5f7;
+            border-radius: 14px;
+            padding: 0.75rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .drawer-hint {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #666;
         }
 
         .footer {
@@ -130,11 +213,29 @@
 
 
     <div class="controls">
-        <button class="btn-water" onclick="giveWater()">Water +20</button>
-        <button class="btn-light" onclick="giveLight()">Sunshine +20</button>
-        <button class="btn-clean" onclick="cleanJar()">Clean jar +20</button>
+        <button class="btn-water" onclick="giveWater()">Water</button>
+        <button class="btn-light" onclick="giveLight()">Sunshine</button>
+        <button class="btn-clean" onclick="cleanJar()">Clean jar</button>
         <button class="btn-reset" onclick="resetPet()">New cactus</button>
+        <button class="btn-decor" onclick="toggleStickerDrawer()">Decorate ✨</button>
     </div>
+
+    <!-- Sticker drawer (hidden by default) -->
+    <!-- <div id="sticker-drawer-backdrop" class="drawer-backdrop" onclick="toggleStickerDrawer(false)"></div> -->
+    <div id="sticker-drawer" class="drawer">
+        <div class="drawer-header">
+            <div class="drawer-title">Stickers</div>
+            <button class="drawer-close" onclick="toggleStickerDrawer(false)">Close</button>
+        </div>
+
+        <div class="sticker-grid">
+            <button class="sticker-btn" onclick="addSticker(0)">Santa Hat</button>
+            <button class="sticker-btn" onclick="addSticker(1)">Wreath</button>
+        </div>
+
+        <div class="drawer-hint">Tip: drag stickers onto the jar.</div>
+    </div>
+
 
     <div class="footer">
         Your cactus lives in this browser only. Close the tab if you want to test what
@@ -147,38 +248,60 @@
         let pet;
         let lastUpdateMs = 0;
         let jarImg;
+        let jarOpenImg;
         let cactusImg;
         let happyCactusImg;
         let okCactusImg;
         let sadCactusImg;
         let deadCactusImg;
+        let decorateOpen = false;
+
+
+        let stickerImgs = [];
+        let stickerSizes = [];
+
+        // sticker drag state
+        let activeStickerIndex = -1;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        // cache jar placement used by render + sticker spawn
+        let jarRect = { x: 0, y: 0, w: 0, h: 0 };
+        const trashRect = { x: 0, y: 0, w: 72, h: 72 }; // canvas-space
+
 
         function preload() {
             // load sprite images
             jarImg = loadImage("jar.png");
+            jarOpenImg = loadImage("jar_lidopen.png");
             happyCactusImg = loadImage("happy_cactus.png?v=2");
             okCactusImg = loadImage("ok_cactus.png");
             sadCactusImg = loadImage("sad_cactus.png");
             deadCactusImg = loadImage("dead_cactus.png");
+            // stickers (transparent PNGs)
+            stickerImgs.push(loadImage("sticker_santa_hat.png?v=1"));
+            stickerSizes.push({ w: 120, h: 120 });
+            stickerImgs.push(loadImage("sticker_wreath.png?v=1"));
+            stickerSizes.push({ w: 120, h: 120 });
+
             cactusImg = happyCactusImg;
         }
 
         const difficultyLevels = [
-                { label: "Chill",  decayFactor: 0.045, healthFactor: 0.8 },
-                // Normal: baseline
-                { label: "Normal", decayFactor: 0.11, healthFactor: 1.0 },
-                // Hard: punishing decay, slightly stronger swings
-                { label: "Hard",   decayFactor: 0.5, healthFactor: 1.3 }
+            { label: "Chill", decayFactor: 0.045, healthFactor: 0.8 },
+            // Normal: baseline
+            { label: "Normal", decayFactor: 0.11, healthFactor: 1.0 },
+            // Hard: punishing decay, slightly stronger swings
+            { label: "Hard", decayFactor: 0.5, healthFactor: 1.3 }
         ];
 
         function getDifficulty(p) {
             const idx =
                 p && typeof p.difficultyIndex === "number"
-                ? p.difficultyIndex
-                : 1;
+                    ? p.difficultyIndex
+                    : 1;
             return difficultyLevels[idx];
         }
-
 
         function newPet() {
             const now = Date.now();
@@ -193,6 +316,7 @@
                 timeOfDeath: null,
                 ageSeconds: 0,
                 born: Date.now(),
+                stickers: [],
                 lastRealTime: now,
                 difficultyIndex: 1, // 0 = easy, 1 = normal, 2 = hard
                 _saveAccumulator: 0 // internal, not part of the “fantasy”
@@ -206,6 +330,7 @@
                 const saved = JSON.parse(raw);
                 // Merge with defaults in case you add fields later
                 let p = Object.assign(newPet(), saved);
+                if (!Array.isArray(p.stickers)) p.stickers = [];
                 if (typeof p.difficultyIndex !== "number") {
                     p.difficultyIndex = 1;
                 }
@@ -237,12 +362,12 @@
             const d = getDifficulty(p);
 
             const moistureDecayPerSec = 0.3 * d.decayFactor;
-            const lightDecayPerSec    = 0.2 * d.decayFactor;
-            const cleanDecayPerSec    = 0.05 * d.decayFactor;
+            const lightDecayPerSec = 0.2 * d.decayFactor;
+            const cleanDecayPerSec = 0.05 * d.decayFactor;
 
             p.moisture -= moistureDecayPerSec * seconds;
-            p.light    -= lightDecayPerSec    * seconds;
-            p.clean    -= cleanDecayPerSec    * seconds;
+            p.light -= lightDecayPerSec * seconds;
+            p.clean -= cleanDecayPerSec * seconds;
 
             clampStats(p);
 
@@ -273,7 +398,7 @@
 
             textFont("system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
             const slider = document.getElementById("difficulty-slider");
-            const label  = document.getElementById("difficulty-label");
+            const label = document.getElementById("difficulty-label");
 
             // initialize from saved pet
             slider.value = pet.difficultyIndex;
@@ -307,8 +432,8 @@
 
             if (!pet.dead) {
                 pet.moisture -= 0.3 * difficulty.decayFactor * dt;
-                pet.light    -= 0.2 * difficulty.decayFactor * dt;
-                pet.clean    -= 0.05 * difficulty.decayFactor * dt;
+                pet.light -= 0.2 * difficulty.decayFactor * dt;
+                pet.clean -= 0.05 * difficulty.decayFactor * dt;
                 clampStats(pet);
 
                 const inGoodMoisture = pet.moisture >= 40 && pet.moisture <= 70;
@@ -327,8 +452,11 @@
                     pet.dead = true;
                     pet.timeOfDeath = Date.now();
                 }
-                
+
                 if (!pet.dead) {
+                    if (!pet.born) {
+                        pet.born = Date.now(); // handle older pets
+                    }
                     pet.ageSeconds = (Date.now() - pet.born) / 1000; // milliseconds to seconds
                 }
             }
@@ -368,13 +496,20 @@
             const jarH = 360;
             const jarX = (width - jarW) / 2;
             const jarY = 80;
-            image(jarImg, jarX, jarY, jarW, jarH);
 
             // cactus placement & scaling by health
             const healthFactor = pet.health / 100; // 0–1
             const minScale = 0.6;
             const maxScale = 1.2;
             const scale = minScale + (maxScale - minScale) * healthFactor;
+
+            if (healthFactor < 0.9) {
+                image(jarImg, jarX, jarY, jarW, jarH);
+            }
+            else {
+                image(jarOpenImg, jarX, jarY, jarW, jarH);
+            }
+            jarRect = { x: jarX, y: jarY, w: jarW, h: jarH };
 
             const baseCactusW = 160;
             const baseCactusH = 180;
@@ -421,6 +556,12 @@
             textAlign(RIGHT, BOTTOM);
             textSize(11);
             text(ageLabel, width - 10, height - 10);
+
+            drawStickers();
+
+            if (decorateOpen) {
+                drawTrashCan();
+            }
         }
 
         function drawBar(x, y, label, value, linear = false) {
@@ -458,6 +599,132 @@
             rect(x, y, (w * clamped) / 100, h, 999);
         }
 
+        function drawStickers() {
+            if (!pet.stickers) return;
+
+            for (const s of pet.stickers) {
+                const img = stickerImgs[s.index];
+                const { w, h } = stickerSize(s);
+
+                image(img, s.x - w / 2, s.y - h / 2, w, h);
+            }
+        }
+
+        function mousePressed() {
+            if (!decorateOpen) return;     // << lock stickers unless decorating
+            if (isOverTrash(mouseX, mouseY)) return;
+            if (!pet || !pet.stickers) return;
+
+            // find topmost sticker under mouse (iterate backwards)
+            for (let i = pet.stickers.length - 1; i >= 0; i--) {
+                const s = pet.stickers[i];
+                const { w, h } = stickerSize(s);
+
+                const left = s.x - w / 2;
+                const top = s.y - h / 2;
+
+                if (mouseX >= left && mouseX <= left + w && mouseY >= top && mouseY <= top + h) {
+                    activeStickerIndex = i;
+                    dragOffsetX = s.x - mouseX;
+                    dragOffsetY = s.y - mouseY;
+
+                    // bring to front
+                    const picked = pet.stickers.splice(i, 1)[0];
+                    pet.stickers.push(picked);
+                    activeStickerIndex = pet.stickers.length - 1;
+
+                    return;
+                }
+            }
+        }
+
+        function mouseDragged() {
+            if (!decorateOpen) return;     // << lock stickers unless decorating
+            if (activeStickerIndex < 0) return;
+
+            const s = pet.stickers[activeStickerIndex];
+            s.x = mouseX + dragOffsetX;
+            s.y = mouseY + dragOffsetY;
+
+            // optional clamp to canvas bounds
+            s.x = constrain(s.x, 0, width);
+            s.y = constrain(s.y, 0, height);
+        }
+
+        function mouseReleased() {
+            if (!decorateOpen) return;
+            if (activeStickerIndex < 0) return;
+
+            if (isOverTrash(mouseX, mouseY)) {
+                pet.stickers.splice(activeStickerIndex, 1);
+            }
+
+            activeStickerIndex = -1;
+            savePet();
+        }
+
+
+        function isOverTrash(px, py) {
+            return (
+                px >= trashRect.x &&
+                px <= trashRect.x + trashRect.w &&
+                py >= trashRect.y &&
+                py <= trashRect.y + trashRect.h
+            );
+        }
+
+        function drawTrashCan() {
+            const pad = 14;
+            trashRect.w = 86;
+            trashRect.h = 72;
+            trashRect.x = width - trashRect.w - pad;
+            trashRect.y = height - trashRect.h - pad;
+
+            const hot = (activeStickerIndex >= 0) && isOverTrash(mouseX, mouseY);
+
+            // Palette tuned to your app vibe
+            const bg = hot ? color(255, 232, 232) : color(240, 245, 250);   // blush vs soft panel
+            const border = hot ? color(210, 60, 60) : color(190, 205, 220); // red vs cool gray
+            const ink = hot ? color(170, 30, 30) : color(70, 90, 110);      // dark red vs slate
+
+            // soft shadow (very light)
+            noStroke();
+            fill(0, 0, 0, 25);
+            rect(trashRect.x + 2, trashRect.y + 3, trashRect.w, trashRect.h, 16);
+
+            // body
+            fill(bg);
+            rect(trashRect.x, trashRect.y, trashRect.w, trashRect.h, 16);
+
+            // border
+            noFill();
+            stroke(border);
+            strokeWeight(2);
+            rect(trashRect.x, trashRect.y, trashRect.w, trashRect.h, 16);
+
+            // icon + label
+            noStroke();
+            fill(ink);
+            textAlign(CENTER, CENTER);
+
+            textSize(26);
+            text("🗑️", trashRect.x + trashRect.w / 2, trashRect.y + 26);
+
+            textSize(11);
+            textStyle(BOLD);
+            text(hot ? "RELEASE TO" : "DRAG TO", trashRect.x + trashRect.w / 2, trashRect.y + 48);
+
+            textSize(11);
+            textStyle(NORMAL);
+            text("TRASH", trashRect.x + trashRect.w / 2, trashRect.y + 62);
+        }
+
+        // helper for consistent hitbox sizing
+        function stickerSize(s) {
+            const sz = stickerSizes[s.index];
+            return { w: sz.w * s.scale, h: sz.h * s.scale };
+        }
+
         // Button actions – this is where the "job" lives
         function giveWater() {
             if (!pet || pet.dead) return;
@@ -489,12 +756,41 @@
             pet.difficultyIndex = oldDifficulty;
 
             const slider = document.getElementById("difficulty-slider");
-            const label  = document.getElementById("difficulty-label");
+            const label = document.getElementById("difficulty-label");
             slider.value = pet.difficultyIndex;
             label.textContent = difficultyLevels[pet.difficultyIndex].label;
 
             savePet();
         }
+
+        function toggleStickerDrawer(force) {
+            const drawer = document.getElementById("sticker-drawer");
+            // const backdrop = document.getElementById("sticker-drawer-backdrop");
+
+            const shouldOpen = typeof force === "boolean" ? force : !drawer.classList.contains("open");
+            drawer.classList.toggle("open", shouldOpen);
+            // backdrop.classList.toggle("open", shouldOpen);
+
+            decorateOpen = shouldOpen;
+        }
+
+        function addSticker(index) {
+            // spawn near the top of the jar by default
+            const spawnX = jarRect.x + jarRect.w * 0.55;
+            const spawnY = jarRect.y + jarRect.h * 0.22;
+
+            const sticker = {
+                index,
+                x: spawnX,
+                y: spawnY,
+                scale: 0.5
+            };
+
+            pet.stickers.push(sticker);
+            savePet();
+        }
+
+
     </script>
 </body>
 
